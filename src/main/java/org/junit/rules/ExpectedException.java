@@ -112,7 +112,7 @@ public class ExpectedException implements TestRule {
         return new ExpectedException();
     }
 
-    private final ExpectedExceptionMatcherBuilder matcherBuilder = new ExpectedExceptionMatcherBuilder();
+    private ExpectedExceptionMatcherBuilder matcherBuilder = new ExpectedExceptionMatcherBuilder();
 
     private String missingExceptionMessage= "Expected test to throw %s";
 
@@ -235,6 +235,13 @@ public class ExpectedException implements TestRule {
 
         @Override
         public void evaluate() throws Throwable {
+            /*
+             * Every evaluation needs to reconstruct an exception matcher, because the ExpectedException rule
+             * handles every test method within a test class. Without resetting state in between evaluations,
+             * expectations configured by one test would leak into subsequent tests.
+             */
+            matcherBuilder = new ExpectedExceptionMatcherBuilder();
+
             try {
                 next.evaluate();
             } catch (Throwable e) {

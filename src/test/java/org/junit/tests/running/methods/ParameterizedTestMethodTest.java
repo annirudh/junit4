@@ -28,10 +28,6 @@ public class ParameterizedTestMethodTest {
         }
 
         @BeforeClass
-        public void notStaticBC() {
-        }
-
-        @BeforeClass
         static void notPublicBC() {
         }
 
@@ -46,10 +42,6 @@ public class ParameterizedTestMethodTest {
 
         @BeforeClass
         public static void fineBC() {
-        }
-
-        @AfterClass
-        public void notStaticAC() {
         }
 
         @AfterClass
@@ -163,7 +155,15 @@ public class ParameterizedTestMethodTest {
     @Parameters
     public static Collection<Object[]> params() {
         return Arrays.asList(new Object[][]{
-                {EverythingWrong.class, 1 + 4 * 5}, {SubWrong.class, 1},
+                /*
+                 * The math below is as follows:
+                 *
+                 * @After / @Before / @Test have four bad methods each (static, non-public, non-void, takes arguments) -> 4 * 3.
+                 * @AfterClass / @BeforeClass have three bad methods each (non-public, non-void, takes arguments) -> 2 * 3.
+                 * The constructor is not public -> 1
+                 */
+                {EverythingWrong.class, (4 * 3) + (2 * 3) + 1},
+                {SubWrong.class, 1},
                 {SubShadows.class, 0}});
     }
 

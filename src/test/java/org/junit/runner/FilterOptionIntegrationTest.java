@@ -22,11 +22,13 @@ public class FilterOptionIntegrationTest {
     private static final String EXCLUDES_DUMMY_CATEGORY_1 = "--filter=" +
             ExcludeCategories.class.getName() + "=" + DummyCategory1.class.getName();
 
-    private JUnitCore jUnitCore = new JUnitCore();
-    private TestListener testListener = new TestListener();
+    private JUnitCore jUnitCore;
+    private TestListener testListener;
 
     @Before
     public void setUp() {
+        jUnitCore = new JUnitCore();
+        testListener = new TestListener();
         jUnitCore.addListener(testListener);
     }
 

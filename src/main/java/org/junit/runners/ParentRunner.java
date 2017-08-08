@@ -5,6 +5,7 @@ import static org.junit.internal.runners.rules.RuleMemberValidator.CLASS_RULE_VA
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -81,6 +82,7 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
      */
     protected ParentRunner(Class<?> testClass) throws InitializationError {
         this.testClass = createTestClass(testClass);
+        initialize();
         validate();
     }
 
@@ -116,14 +118,21 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
     //
 
     /**
+     *
+     */
+    protected void initialize() {
+
+    }
+
+    /**
      * Adds to {@code errors} a throwable for each problem noted with the test class (available from {@link #getTestClass()}).
      * Default implementation adds an error for each method annotated with
      * {@code @BeforeClass} or {@code @AfterClass} that is not
      * {@code public static void} with no arguments.
      */
     protected void collectInitializationErrors(List<Throwable> errors) {
-        validatePublicVoidNoArgMethods(BeforeClass.class, true, errors);
-        validatePublicVoidNoArgMethods(AfterClass.class, true, errors);
+        validatePublicVoidNoArgMethods(BeforeClass.class, errors);
+        validatePublicVoidNoArgMethods(AfterClass.class, errors);
         validateClassRules(errors);
         applyValidators(errors);
     }
@@ -142,12 +151,31 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
      * <ul>
      * <li>is not public, or
      * <li>takes parameters, or
+     * <li>returns something other than void
+     * </ul>
+     */
+    protected final void validatePublicVoidNoArgMethods(Class<? extends Annotation> annotation,
+                                                  List<Throwable> errors) {
+        List<FrameworkMethod> methods = getTestClass().getAnnotatedMethods(annotation);
+
+        for (FrameworkMethod eachTestMethod : methods) {
+            boolean isStatic = Modifier.isStatic(eachTestMethod.getMethod().getModifiers());
+            eachTestMethod.validatePublicVoidNoArg(isStatic, errors);
+        }
+    }
+
+    /**
+     * Adds to {@code errors} if any method in this class is annotated with
+     * {@code annotation}, but:
+     * <ul>
+     * <li>is not public, or
+     * <li>takes parameters, or
      * <li>returns something other than void, or
      * <li>is static (given {@code isStatic is false}), or
      * <li>is not static (given {@code isStatic is true}).
      * </ul>
      */
-    protected void validatePublicVoidNoArgMethods(Class<? extends Annotation> annotation,
+    protected final void validatePublicVoidNoArgMethods(Class<? extends Annotation> annotation,
             boolean isStatic, List<Throwable> errors) {
         List<FrameworkMethod> methods = getTestClass().getAnnotatedMethods(annotation);
 
@@ -189,10 +217,11 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
     protected Statement classBlock(final RunNotifier notifier) {
         Statement statement = childrenInvoker(notifier);
         if (!areAllChildrenIgnored()) {
+            statement = withClassRules(statement);
             statement = withBeforeClasses(statement);
             statement = withAfterClasses(statement);
-            statement = withClassRules(statement);
         }
+
         return statement;
     }
 

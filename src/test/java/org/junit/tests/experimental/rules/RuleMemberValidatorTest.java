@@ -9,6 +9,7 @@ import static org.junit.internal.runners.rules.RuleMemberValidator.RULE_VALIDATO
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -21,7 +22,13 @@ import org.junit.runners.model.Statement;
 import org.junit.runners.model.TestClass;
 
 public class RuleMemberValidatorTest {
-    private final List<Throwable> errors = new ArrayList<Throwable>();
+
+    private List<Throwable> errors;
+
+    @Before
+    public void resetErrors() {
+        errors = new ArrayList<Throwable>();
+    }
 
     @Test
     public void rejectProtectedClassRule() {

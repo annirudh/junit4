@@ -113,11 +113,6 @@ public class Theories extends BlockJUnit4ClassRunner {
     }
 
     @Override
-    protected void validateConstructor(List<Throwable> errors) {
-        validateOnlyOneConstructor(errors);
-    }
-
-    @Override
     protected void validateTestMethods(List<Throwable> errors) {
         for (FrameworkMethod each : computeTestMethods()) {
             if (each.getAnnotation(Theory.class) != null) {

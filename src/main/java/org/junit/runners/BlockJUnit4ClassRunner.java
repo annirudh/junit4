@@ -1,5 +1,6 @@
 package org.junit.runners;
 
+import static org.junit.internal.runners.model.ReflectiveCallable.memoize;
 import static org.junit.internal.runners.rules.RuleMemberValidator.RULE_METHOD_VALIDATOR;
 import static org.junit.internal.runners.rules.RuleMemberValidator.RULE_VALIDATOR;
 
@@ -8,7 +9,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -56,6 +59,12 @@ import org.junit.runners.model.Statement;
  */
 public class BlockJUnit4ClassRunner extends ParentRunner<FrameworkMethod> {
     private final ConcurrentHashMap<FrameworkMethod, Description> methodDescriptions = new ConcurrentHashMap<FrameworkMethod, Description>();
+
+    /**
+     * Supplies the underlying test object instance against which test methods execute.
+     */
+    private ReflectiveCallable testSupplier;
+
     /**
      * Creates a BlockJUnit4ClassRunner to run {@code klass}
      *
@@ -109,6 +118,20 @@ public class BlockJUnit4ClassRunner extends ParentRunner<FrameworkMethod> {
     //
     // Override in subclasses
     //
+
+    @Override
+    protected void initialize() {
+        super.initialize();
+
+        /*
+         * Initialize the test supplier before validation can happen.
+         */
+        testSupplier = memoize(new ReflectiveCallable() {
+            protected Object runReflectiveCall() throws Throwable {
+                return createTest();
+            }
+        });
+    }
 
     /**
      * Returns the methods that run tests. Default implementation returns all
@@ -259,13 +282,9 @@ public class BlockJUnit4ClassRunner extends ParentRunner<FrameworkMethod> {
      */
     protected Statement methodBlock(FrameworkMethod method) {
         Object test;
+
         try {
-            test = new ReflectiveCallable() {
-                @Override
-                protected Object runReflectiveCall() throws Throwable {
-                    return createTest();
-                }
-            }.run();
+            test = testSupplier.run();
         } catch (Throwable e) {
             return new Fail(e);
         }
@@ -348,8 +367,46 @@ public class BlockJUnit4ClassRunner extends ParentRunner<FrameworkMethod> {
                 target);
     }
 
-    private Statement withRules(FrameworkMethod method, Object target,
-            Statement statement) {
+    /**
+     * Returns a {@link Statement}: run all non-overridden {@code @BeforeClass} methods on this class
+     * and superclasses before executing {@code statement}; if any throws an
+     * Exception, stop execution and pass the exception on.
+     */
+    @Override
+    protected Statement withBeforeClasses(Statement statement) {
+        List<FrameworkMethod> befores = getTestClass()
+                .getAnnotatedMethods(BeforeClass.class);
+        try {
+            Object test = testSupplier.run();
+            return befores.isEmpty() ? statement :
+                    new RunBefores(statement, befores, test);
+        } catch (Throwable e) {
+            return new Fail(e);
+        }
+    }
+
+    /**
+     * Returns a {@link Statement}: run all non-overridden {@code @AfterClass} methods on this class
+     * and superclasses before executing {@code statement}; all AfterClass methods are
+     * always executed: exceptions thrown by previous steps are combined, if
+     * necessary, with exceptions from AfterClass methods into a
+     * {@link org.junit.runners.model.MultipleFailureException}.
+     */
+    @Override
+    protected Statement withAfterClasses(Statement statement) {
+        List<FrameworkMethod> afters = getTestClass()
+                .getAnnotatedMethods(AfterClass.class);
+
+        try {
+            Object test = testSupplier.run();
+            return afters.isEmpty() ? statement :
+                    new RunAfters(statement, afters, test);
+        } catch (Throwable e) {
+            return new Fail(e);
+        }
+    }
+
+    private Statement withRules(FrameworkMethod method, Object target, Statement statement) {
         List<TestRule> testRules = getTestRules(target);
         Statement result = statement;
         result = withMethodRules(method, testRules, target, result);
@@ -414,6 +471,17 @@ public class BlockJUnit4ClassRunner extends ParentRunner<FrameworkMethod> {
                 Rule.class, TestRule.class));
 
         return result;
+    }
+
+    /**
+     * @return the underlying test object instance against which test methods execute.
+     */
+    protected final Object getTestInstance() {
+        try {
+            return testSupplier.run();
+        } catch (Throwable throwable) {
+            throw new RuntimeException(throwable);
+        }
     }
 
     private Class<? extends Throwable> getExpectedException(Test annotation) {

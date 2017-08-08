@@ -195,8 +195,8 @@ public class ForwardCompatibilityTest extends TestCase {
     }
 
     public static class InvalidMethodTest {
-        @BeforeClass
-        public void shouldBeStatic() {
+        @Before
+        public static void shouldNotBeStatic() {
         }
 
         @Test
@@ -210,7 +210,7 @@ public class ForwardCompatibilityTest extends TestCase {
         adapter.run(result);
         assertEquals(1, result.errorCount());
         TestFailure failure = result.errors().nextElement();
-        assertTrue(failure.exceptionMessage().contains("Method shouldBeStatic() should be static"));
+        assertTrue(failure.exceptionMessage().contains("Method shouldNotBeStatic() should not be static"));
     }
 
     private static boolean wasRun = false;

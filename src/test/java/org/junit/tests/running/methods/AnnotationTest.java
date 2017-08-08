@@ -205,7 +205,12 @@ public class AnnotationTest extends TestCase {
         JUnitCore runner = new JUnitCore();
         runner.run(TwoTests.class);
         assertEquals(2, count);
-        assertEquals(2, tests.size());
+
+        /*
+         * The set 'tests' should only contain one element, as each test method invocation should operate against the
+         * same underlying test object instance and push the same object into the set twice.
+         */
+        assertEquals(1, tests.size());
     }
 
     static public class OldTest extends TestCase {
@@ -352,7 +357,7 @@ public class AnnotationTest extends TestCase {
     public void testNonStaticOneTimeSetup() throws Exception {
         JUnitCore core = new JUnitCore();
         Result result = core.run(NonStaticOneTimeSetup.class);
-        assertEquals(1, result.getFailureCount());
+        assertEquals(0, result.getFailureCount());
     }
 
     static public class ErrorInBeforeClass {

@@ -21,20 +21,4 @@ public class ValidationTest {
         assertEquals(WrongBeforeClass.class.getName(),
                 Request.aClass(WrongBeforeClass.class).getRunner().getDescription().getDisplayName());
     }
-
-    public static class NonStaticBeforeClass {
-        @BeforeClass
-        public void before() {
-        }
-
-        @Test
-        public void hereBecauseEveryTestClassNeedsATest() {
-        }
-    }
-
-    @Test
-    public void nonStaticBeforeClass() {
-        Result result = JUnitCore.runClasses(NonStaticBeforeClass.class);
-        assertEquals("Method before() should be static", result.getFailures().get(0).getMessage());
-    }
 }

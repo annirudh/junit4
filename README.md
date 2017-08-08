@@ -1,12 +1,11 @@
-# JUnit 4
-JUnit is a simple framework to write repeatable tests. It is an instance of the xUnit architecture for unit testing frameworks.
+# Fork of JUnit 4 to relax requirements on static @AfterClass / @BeforeClass methods
+A fork of JUnit 4.12 that relaxes the static requirement for methods annotated with @AfterClass / @BeforeClass. This is made possible
+by changes to the core test driver execution in BlockJUnit4Runner that caches the first test object instance that it constructs and
+reusing the same instance for each test.
 
-For more information, please visit:
-* [Wiki](https://github.com/junit-team/junit/wiki)
-* [Download and Install guide](https://github.com/junit-team/junit/wiki/Download-and-Install)
-* [Getting Started](https://github.com/junit-team/junit/wiki/Getting-started)
+Maintains feature parity with JUnit 4.12 with one notable exception:
+* [Theories](https://github.com/junit-team/junit4/wiki/Theories) with parameterized constructors are unsupported, because the parameterized
+constructors require reinvocation for every test.
 
-[![Latest Build Status](https://junit.ci.cloudbees.com/job/JUnit/badge/icon)](https://junit.ci.cloudbees.com/)
-
-[![Built on DEV@cloud](http://www.cloudbees.com/sites/default/files/Button-Built-on-CB-1.png)](http://www.cloudbees.com/foss/foss-dev.cb)
-
+NOTE: The fact that each test class is initialized once means that test methods that impact the state of the test class can impact
+subsequent tests. Test writers seeking to use this fork must ensure that they reset any relevant state in between tests.

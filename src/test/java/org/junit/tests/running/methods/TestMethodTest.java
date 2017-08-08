@@ -27,10 +27,6 @@ public class TestMethodTest {
         }
 
         @BeforeClass
-        public void notStaticBC() {
-        }
-
-        @BeforeClass
         static void notPublicBC() {
         }
 
@@ -45,10 +41,6 @@ public class TestMethodTest {
 
         @BeforeClass
         public static void fineBC() {
-        }
-
-        @AfterClass
-        public void notStaticAC() {
         }
 
         @AfterClass
@@ -135,7 +127,15 @@ public class TestMethodTest {
     @Test
     public void testFailures() throws Exception {
         List<Throwable> problems = validateAllMethods(EverythingWrong.class);
-        int errorCount = 1 + 4 * 5; // missing constructor plus four invalid methods for each annotation */
+
+        /*
+         * The math below is as follows:
+         *
+         * @After / @Before / @Test have four bad methods each (static, non-public, non-void, takes arguments) -> 4 * 3.
+         * @AfterClass / @BeforeClass have three bad methods each (non-public, non-void, takes arguments) -> 2 * 3.
+         * The constructor is not public -> 1
+         */
+        int errorCount = (4 * 3) + (2 * 3) + 1;
         assertEquals(errorCount, problems.size());
     }
 
@@ -251,5 +251,37 @@ public class TestMethodTest {
         Result result = JUnitCore.runClasses(OnlyTestIsIgnored.class);
         assertEquals(0, result.getFailureCount());
         assertEquals(1, result.getIgnoreCount());
+    }
+
+    public static class CorrectTest {
+        @BeforeClass
+        public static void staticBeforeClass() { }
+
+        @BeforeClass
+        public void beforeClass() { }
+
+        @AfterClass
+        public static void staticAfterClass() { }
+
+        @AfterClass
+        public void afterClass() { }
+
+        @Before
+        public void before() { }
+
+        @After
+        public void after() { }
+
+        @Test
+        public void a() { }
+    }
+
+    @Test
+    public void validateCorrectTest() {
+        Result result = JUnitCore.runClasses(CorrectTest.class);
+
+        assertEquals(0, result.getFailureCount());
+        assertEquals(0, result.getIgnoreCount());
+        assertEquals(1, result.getRunCount());
     }
 }
